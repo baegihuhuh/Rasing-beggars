@@ -81,6 +81,15 @@ function generatePlayerId(accounts) {
   return candidate;
 }
 
+function getClientMeta(req) {
+  const ua = String(req.get('user-agent') || '');
+  return {
+    ua,
+    isInstagram: /Instagram/i.test(ua),
+    ip: req.ip || req.connection?.remoteAddress || 'unknown'
+  };
+}
+
 app.get('/api/leaderboard', (req, res) => {
   const leaderboard = loadLeaderboard()
     .sort((a, b) => b.money - a.money)
@@ -193,7 +202,8 @@ app.post('/api/accounts/register', (req, res) => {
       upgradeCost: 50,
       incomePerSecond: 0,
       rebirth: 0,
-      catData: {}
+      catData: {},
+      savedAt: Date.now()
     }
   };
 
@@ -241,13 +251,18 @@ app.post('/api/accounts/login', (req, res) => {
 // 게임 세이브 로드 API
 app.get('/api/accounts/:username/save', (req, res) => {
   const { username } = req.params;
+  const client = getClientMeta(req);
 
   const accounts = loadAccounts();
   const account = accounts.find((acc) => acc.username === username);
 
   if (!account) {
+    console.log(`[SAVE-LOAD] miss username=${username} ip=${client.ip} insta=${client.isInstagram}`);
     return res.status(404).json({ message: '계정을 찾을 수 없습니다.' });
   }
+
+  const savedAt = Number(account.gameData?.savedAt) || 0;
+  console.log(`[SAVE-LOAD] ok username=${username} savedAt=${savedAt} ip=${client.ip} insta=${client.isInstagram}`);
 
   res.json({ ok: true, gameData: account.gameData || {} });
 });
@@ -256,8 +271,10 @@ app.get('/api/accounts/:username/save', (req, res) => {
 app.post('/api/accounts/:username/save', (req, res) => {
   const { username } = req.params;
   const { gameData } = req.body || {};
+  const client = getClientMeta(req);
 
   if (!gameData) {
+    console.log(`[SAVE-WRITE] invalid-body username=${username} ip=${client.ip} insta=${client.isInstagram}`);
     return res.status(400).json({ message: '게임 데이터가 필요합니다.' });
   }
 
@@ -271,7 +288,10 @@ app.post('/api/accounts/:username/save', (req, res) => {
   const incomingSavedAt = Number(gameData.savedAt) || 0;
   const existingSavedAt = Number(accounts[accountIndex].gameData?.savedAt) || 0;
 
+  console.log(`[SAVE-WRITE] try username=${username} incomingSavedAt=${incomingSavedAt} existingSavedAt=${existingSavedAt} money=${Number(gameData.money) || 0} rebirth=${Number(gameData.rebirth) || 0} ip=${client.ip} insta=${client.isInstagram}`);
+
   if (incomingSavedAt && existingSavedAt && incomingSavedAt < existingSavedAt) {
+    console.log(`[SAVE-WRITE] stale-rejected username=${username} incomingSavedAt=${incomingSavedAt} existingSavedAt=${existingSavedAt}`);
     return res.status(409).json({
       message: '더 오래된 저장 데이터입니다.',
       ignored: true,
@@ -283,7 +303,9 @@ app.post('/api/accounts/:username/save', (req, res) => {
   accounts[accountIndex].lastSaved = Date.now();
   saveAccounts(accounts);
 
-  res.json({ ok: true });
+  console.log(`[SAVE-WRITE] committed username=${username} savedAt=${incomingSavedAt || accounts[accountIndex].lastSaved} ip=${client.ip} insta=${client.isInstagram}`);
+
+  res.json({ ok: true, savedAt: incomingSavedAt || accounts[accountIndex].lastSaved });
 });
 
 app.listen(PORT, () => {

@@ -1187,6 +1187,8 @@ let currentSkin = 'beggar';  // 현재 선택된 스킨
 let saveGameTimer = null;  // 게임 저장 타이머
 let lastSaveAttemptAt = 0;
 const SAVE_INTERVAL_MS = 2000;
+const API_BASE_KEY = 'beggarApiBase';
+let lastSuccessfulApiBase = localStorage.getItem(API_BASE_KEY) || '';
 let sfxVolume = 0.1;  // 효과음 볼륨 (0.0 ~ 1.0)
 
 function detectMobileDevice() {
@@ -1217,10 +1219,8 @@ document.addEventListener('DOMContentLoaded', applyMobileLayoutClass);
 applyMobileLayoutClass();
 
 // 서버에 게임 세이브 저장
-async function saveGameToServer() {
-    if (!currentUsername) return;
-
-    const gameState = {
+function buildGameStateSnapshot() {
+    return {
         money: money,
         power: power,
         upgradeCost: upgradeCost,
@@ -1229,6 +1229,72 @@ async function saveGameToServer() {
         catData: catData,
         savedAt: Date.now()
     };
+}
+
+function getSavedAt(data) {
+    const savedAt = Number(data?.savedAt) || 0;
+    return Number.isFinite(savedAt) ? savedAt : 0;
+}
+
+function persistLocalGameState(snapshot = null) {
+    if (!currentPlayerId) return;
+    const state = snapshot || buildGameStateSnapshot();
+    try {
+        localStorage.setItem(getSaveKey(), JSON.stringify(state));
+    } catch (error) {
+        console.warn('로컬 저장 실패:', error);
+    }
+}
+
+function loadLocalGameState() {
+    if (!currentPlayerId) return null;
+
+    try {
+        const raw = localStorage.getItem(getSaveKey());
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (error) {
+        console.warn('로컬 저장 불러오기 실패:', error);
+        return null;
+    }
+}
+
+function getApiBaseCandidates() {
+    const candidates = [];
+
+    if (lastSuccessfulApiBase !== null && lastSuccessfulApiBase !== undefined) {
+        candidates.push(lastSuccessfulApiBase);
+    }
+
+    if (location.protocol === 'file:') {
+        candidates.push('http://localhost:3000', 'http://127.0.0.1:3000');
+    } else {
+        candidates.push('', 'http://localhost:3000', 'http://127.0.0.1:3000');
+    }
+
+    return [...new Set(candidates)];
+}
+
+function rememberApiBase(base) {
+    lastSuccessfulApiBase = base;
+    try {
+        localStorage.setItem(API_BASE_KEY, base);
+    } catch (error) {
+        console.warn('API base 저장 실패:', error);
+    }
+}
+
+function resolveApiUrl(path) {
+    const base = getApiBaseCandidates()[0] || '';
+    return `${base}${path}`;
+}
+
+async function saveGameToServer() {
+    if (!currentUsername) return;
+
+    const gameState = buildGameStateSnapshot();
+    persistLocalGameState(gameState);
 
     console.log('💾 서버에 저장:', gameState);
 
@@ -1262,24 +1328,18 @@ function scheduleSaveGame() {
 function flushSaveOnExit() {
     if (!currentUsername) return;
 
-    const gameState = {
-        money: money,
-        power: power,
-        upgradeCost: upgradeCost,
-        incomePerSecond: incomePerSecond,
-        rebirth: rebirth,
-        catData: catData,
-        savedAt: Date.now()
-    };
+    const gameState = buildGameStateSnapshot();
+    persistLocalGameState(gameState);
 
     const payload = JSON.stringify({ gameData: gameState });
-    const url = `/api/accounts/${encodeURIComponent(currentUsername)}/save`;
+    const path = `/api/accounts/${encodeURIComponent(currentUsername)}/save`;
+    const url = resolveApiUrl(path);
 
     try {
         if (navigator.sendBeacon) {
             const blob = new Blob([payload], { type: 'application/json' });
-            navigator.sendBeacon(url, blob);
-            return;
+            const beaconOk = navigator.sendBeacon(url, blob);
+            if (beaconOk) return;
         }
     } catch (error) {
         console.warn('sendBeacon 저장 실패:', error);
@@ -1319,19 +1379,37 @@ function normalizePassword(value) {
 }
 
 async function requestAPI(path, options = {}) {
-    const bases = location.protocol === 'file:'
-        ? ['http://localhost:3000', 'http://127.0.0.1:3000']
-        : ['', 'http://localhost:3000', 'http://127.0.0.1:3000'];
+    const bases = getApiBaseCandidates();
+    const retryableStatuses = new Set([404, 405, 502, 503, 504]);
 
     let lastError = null;
+    let lastResponse = null;
 
-    for (const base of bases) {
+    for (let index = 0; index < bases.length; index++) {
+        const base = bases[index];
+        const isLastCandidate = index === bases.length - 1;
         try {
             const response = await fetch(`${base}${path}`, options);
+
+            const shouldTryNextBase =
+                path.startsWith('/api/') &&
+                retryableStatuses.has(response.status) &&
+                !isLastCandidate;
+
+            if (shouldTryNextBase) {
+                lastResponse = response;
+                continue;
+            }
+
+            rememberApiBase(base);
             return response;
         } catch (error) {
             lastError = error;
         }
+    }
+
+    if (lastResponse) {
+        return lastResponse;
     }
 
     throw lastError || new Error('서버 연결 실패');
@@ -1393,12 +1471,14 @@ async function requestAPI(path, options = {}) {
         }
 
         console.log(`📚 서버에서 게임 데이터 불러오기: ${currentUsername}`);
+        let serverData = null;
+
         try {
             const response = await requestAPI(`/api/accounts/${encodeURIComponent(currentUsername)}/save`);
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ 서버에서 받은 데이터:', result.gameData);
-                applyPlayerGameData(result.gameData);
+                serverData = result.gameData || null;
             } else {
                 console.error('❌ 서버 응답 오류:', response.status);
                 console.warn('⚠️ 서버 응답 실패로 기존 로컬 상태를 유지합니다.');
@@ -1406,6 +1486,26 @@ async function requestAPI(path, options = {}) {
         } catch (e) {
             console.error('게임 데이터 로드 실패:', e);
             console.warn('⚠️ 네트워크 오류로 기존 로컬 상태를 유지합니다.');
+        }
+
+        const localData = loadLocalGameState();
+        const serverSavedAt = getSavedAt(serverData);
+        const localSavedAt = getSavedAt(localData);
+
+        let chosenData = serverData || localData;
+        if (serverData && localData) {
+            chosenData = localSavedAt > serverSavedAt ? localData : serverData;
+        }
+
+        applyPlayerGameData(chosenData || null);
+
+        if (chosenData) {
+            persistLocalGameState(chosenData);
+        }
+
+        if (localData && localSavedAt > serverSavedAt) {
+            console.log('⬆️ 로컬 최신 데이터를 서버로 재동기화합니다.');
+            saveGameToServer();
         }
     }
 
@@ -1541,8 +1641,8 @@ async function requestAPI(path, options = {}) {
             document.getElementById('player-id-display').innerText = `내 ID: ${currentUsername}#${currentPlayerId}`;
             hideLoginOverlay();
 
-            // 서버에서 게임 데이터 로드
-            applyPlayerGameData(result.account.gameData);
+            // 서버/로컬 최신 데이터 병합 로드
+            await loadCurrentPlayerGame();
             loadSavedSkin();
             updateUI();
             loadLeaderboard();
