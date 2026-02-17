@@ -955,6 +955,60 @@ body.mobile #music-control {
         top: 44px;
     }
 }
+
+/* 모바일 감지가 빗나가도 적용되는 터치 기기 폴백 */
+@media (hover: none) and (pointer: coarse) {
+    #top-bar {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    #money-display,
+    #income-display,
+    #rebirth-display,
+    #player-display {
+        min-width: 0 !important;
+    }
+
+    #game-container {
+        margin-top: 90px;
+    }
+
+    #shop {
+        width: 96%;
+        max-width: 430px;
+        bottom: 10px;
+    }
+
+    #leaderboard-panel {
+        right: 6px;
+        top: 92px;
+        width: 160px;
+    }
+
+    #settings-btn {
+        top: 52px;
+        left: 88px;
+        font-size: 13px;
+        padding: 7px 9px;
+    }
+
+    #rebirth-btn {
+        top: 52px;
+        left: 10px;
+        font-size: 10px;
+        padding: 7px 9px;
+    }
+
+    #reset-btn {
+        top: 10px;
+        right: 10px;
+        font-size: 11px;
+        padding: 7px 10px;
+    }
+}
 </style>
 </head>
 <body>
