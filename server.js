@@ -8,6 +8,19 @@ const DB_PATH = path.join(__dirname, 'leaderboard.json');
 const ACCOUNTS_PATH = path.join(__dirname, 'accounts.json');
 
 app.use(express.json());
+app.disable('etag');
+
+app.use((req, res, next) => {
+  const isHtmlRequest = req.path === '/' || req.path.endsWith('.html');
+  if (isHtmlRequest) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -17,7 +30,11 @@ app.use((req, res, next) => {
   }
   next();
 });
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, {
+  etag: false,
+  lastModified: false,
+  maxAge: 0
+}));
 
 function loadLeaderboard() {
   try {
