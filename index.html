@@ -1,7 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        /* 화면 크기에 상관없이 내용이 넘치지 않게 조절 */
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+    touch-action: manipulation; /* 더블 클릭 확대 방지 (클리커 게임 필수!) */
+}
+
+/* 버튼이 너무 작으면 터치가 힘드니 크기를 키워주세요 */
+button {
+    min-height: 44px; /* 모바일 터치 권장 최소 크기 */
+}
     @keyframes bounce {
         from { transform: translateY(0); }
         to { transform: translateY(-10px); }
