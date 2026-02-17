@@ -717,11 +717,30 @@ img {
     }
     
     #shop {
-        width: 96%;
-        max-width: 430px;
-        padding: 10px;
-        max-height: 210px;
-        bottom: 10px;
+        position: static;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        width: 94%;
+        max-width: 360px;
+        padding: 8px;
+        max-height: none;
+        overflow: visible;
+        margin: 12px auto 18px;
+    }
+
+    #shop > div:first-child {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+    }
+
+    #power-up-btn,
+    #toggle-cat-btn {
+        width: 100%;
+        font-size: 13px;
+        padding: 10px 12px;
     }
 
     .cat-list button {
@@ -873,11 +892,23 @@ body.mobile #speech-bubble {
 }
 
 body.mobile #shop {
-    width: 96%;
-    max-width: 460px;
-    padding: 10px;
-    max-height: 220px;
-    bottom: 8px;
+    position: static;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    width: 94%;
+    max-width: 360px;
+    padding: 8px;
+    max-height: none;
+    overflow: visible;
+    margin: 12px auto 18px;
+}
+
+body.mobile #shop > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
 }
 
 body.mobile .cat-list button {
@@ -1017,9 +1048,13 @@ body.mobile #music-control {
     }
 
     #shop {
-        width: 96%;
-        max-width: 430px;
-        bottom: 10px;
+        position: static;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        width: 94%;
+        max-width: 360px;
+        margin: 12px auto 18px;
     }
 
     #leaderboard-panel {
