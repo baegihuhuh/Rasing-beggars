@@ -1,18 +1,27 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        /* 화면 크기에 상관없이 내용이 넘치지 않게 조절 */
 body {
-    max-width: 100%;
+    max-width: 100vw;
+    margin: 0;
+    padding: 0;
     overflow-x: hidden;
-    touch-action: manipulation; /* 더블 클릭 확대 방지 (클리커 게임 필수!) */
+    touch-action: manipulation;
 }
 
-/* 버튼이 너무 작으면 터치가 힘드니 크기를 키워주세요 */
 button {
-    min-height: 44px; /* 모바일 터치 권장 최소 크기 */
+    min-height: 44px;
+    padding: 15px 20px;
+    font-size: 16px;
+    margin: 5px;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
 }
     @keyframes bounce {
         from { transform: translateY(0); }
@@ -41,8 +50,6 @@ button {
         z-index: 1000;
     }
 </style>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>설윤 클리커</title>
     <style>
         /* 고양이 상점 레이아웃 */
@@ -437,6 +444,8 @@ button {
     #login-modal {
         background: white;
         width: 360px;
+        max-width: calc(100vw - 24px);
+        box-sizing: border-box;
         border-radius: 12px;
         padding: 18px;
         text-align: left;
@@ -629,6 +638,8 @@ button {
         flex-wrap: wrap;
         padding: 8px;
         font-size: 11px;
+        gap: 8px;
+        justify-content: center;
     }
     
     #money-display {
@@ -707,6 +718,11 @@ button {
     .skin-btn {
         font-size: 10px;
         padding: 5px 8px;
+    }
+
+    #logout-btn {
+        font-size: 11px;
+        padding: 6px 8px;
     }
 }
 
@@ -819,6 +835,101 @@ body.mobile #music-control {
     top: 100px;
     left: 8px;
     padding: 10px;
+}
+
+/* 초소형 모바일(320~420px)에서 UI 겹침 방지 */
+@media (max-width: 420px) {
+    #top-bar {
+        gap: 6px;
+        row-gap: 4px;
+        padding: 6px 8px;
+    }
+
+    #money-display,
+    #income-display,
+    #rebirth-display,
+    #player-display {
+        min-width: 0 !important;
+        font-size: 11px;
+    }
+
+    #leaderboard-panel,
+    body.mobile #leaderboard-panel {
+        width: 140px;
+        right: 4px;
+        top: 90px;
+    }
+
+    #rebirth-btn,
+    #settings-btn,
+    #reset-btn {
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+
+    #logout-btn {
+        font-size: 10px;
+        padding: 5px 7px;
+    }
+
+    #music-control,
+    body.mobile #music-control {
+        left: 8px;
+        right: 8px;
+        width: auto;
+        box-sizing: border-box;
+        top: 96px;
+    }
+
+    .cat-list button,
+    body.mobile .cat-list button {
+        min-width: 102px;
+    }
+}
+
+/* 모바일 가로모드 전용 보정 */
+@media (max-width: 900px) and (orientation: landscape) {
+    #top-bar,
+    body.mobile #top-bar {
+        padding: 6px 10px;
+        gap: 6px;
+    }
+
+    #game-container,
+    body.mobile #game-container {
+        margin-top: 78px;
+    }
+
+    #leaderboard-panel,
+    body.mobile #leaderboard-panel {
+        top: 74px;
+        width: 150px;
+    }
+
+    #music-control,
+    body.mobile #music-control {
+        top: 78px;
+        left: 8px;
+        right: 8px;
+        width: auto;
+        max-width: 240px;
+        box-sizing: border-box;
+    }
+
+    #shop,
+    body.mobile #shop {
+        bottom: 6px;
+        max-height: 150px;
+    }
+
+    #rebirth-btn,
+    #settings-btn,
+    #reset-btn,
+    body.mobile #rebirth-btn,
+    body.mobile #settings-btn,
+    body.mobile #reset-btn {
+        top: 44px;
+    }
 }
 </style>
 </head>
