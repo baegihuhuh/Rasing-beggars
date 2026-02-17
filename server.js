@@ -268,6 +268,17 @@ app.post('/api/accounts/:username/save', (req, res) => {
     return res.status(404).json({ message: '계정을 찾을 수 없습니다.' });
   }
 
+  const incomingSavedAt = Number(gameData.savedAt) || 0;
+  const existingSavedAt = Number(accounts[accountIndex].gameData?.savedAt) || 0;
+
+  if (incomingSavedAt && existingSavedAt && incomingSavedAt < existingSavedAt) {
+    return res.status(409).json({
+      message: '더 오래된 저장 데이터입니다.',
+      ignored: true,
+      latestSavedAt: existingSavedAt
+    });
+  }
+
   accounts[accountIndex].gameData = gameData;
   accounts[accountIndex].lastSaved = Date.now();
   saveAccounts(accounts);
