@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <style>
 body {
     max-width: 100vw;
@@ -22,6 +25,27 @@ button {
 img {
     max-width: 100%;
     height: auto;
+}
+
+#build-version {
+    position: fixed;
+    right: 8px;
+    bottom: 8px;
+    z-index: 9999;
+    font-size: 10px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    padding: 4px 6px;
+    border-radius: 6px;
+    pointer-events: none;
+}
+
+@media (max-width: 420px) {
+    #build-version {
+        font-size: 9px;
+        right: 6px;
+        bottom: 6px;
+    }
 }
     @keyframes bounce {
         from { transform: translateY(0); }
@@ -934,6 +958,8 @@ body.mobile #music-control {
 </style>
 </head>
 <body>
+
+<div id="build-version">build: 2026-02-18-03</div>
 
 <div id="top-bar">
     <div id="money-display">💰 0원</div>
