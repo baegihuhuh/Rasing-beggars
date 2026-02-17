@@ -398,6 +398,36 @@ img {
         font-size: 16px;
     }
 
+    #leaderboard-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+
+    #leaderboard-header h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+
+    #toggle-board-btn {
+        width: auto !important;
+        margin-bottom: 0 !important;
+        background-color: #37474f;
+        color: white;
+        padding: 5px 8px !important;
+        font-size: 12px;
+    }
+
+    #leaderboard-content {
+        display: block;
+    }
+
+    #leaderboard-panel.collapsed #leaderboard-content {
+        display: none;
+    }
+
     #leaderboard-panel button {
         width: 100%;
         border: none;
@@ -711,6 +741,11 @@ img {
     #leaderboard-panel h3 {
         font-size: 12px;
     }
+
+    #toggle-board-btn {
+        font-size: 10px;
+        padding: 4px 7px !important;
+    }
     
     #settings-btn {
         top: 52px;
@@ -802,6 +837,11 @@ body.mobile #leaderboard-panel {
 
 body.mobile #leaderboard-panel h3 {
     font-size: 13px;
+}
+
+body.mobile #toggle-board-btn {
+    font-size: 10px;
+    padding: 4px 7px !important;
 }
 
 body.mobile #leaderboard-list,
@@ -1013,7 +1053,7 @@ body.mobile #music-control {
 </head>
 <body>
 
-<div id="build-version">build: 2026-02-18-03</div>
+<div id="build-version">대호2.18</div>
 
 <div id="top-bar">
     <div id="money-display">💰 0원</div>
@@ -1038,12 +1078,18 @@ body.mobile #music-control {
     <button id="bgm-toggle" onclick="toggleBGM()">🔊 음악 끄기</button>
 </div>
 
-<div id="leaderboard-panel">
-    <h3>🏆 리더보드 TOP 10 <span style="font-size: 12px; color: #666;">(20초마다 갱신)</span></h3>
-    <div id="player-id-display">내 ID: 생성 중...</div>
-    <button id="refresh-board-btn" onclick="loadLeaderboard()">새로고침</button>
-    <div id="leaderboard-status"></div>
-    <ol id="leaderboard-list"></ol>
+<div id="leaderboard-panel" class="collapsed">
+    <div id="leaderboard-header">
+        <h3>🏆 리더보드 TOP 10</h3>
+        <button id="toggle-board-btn" onclick="toggleLeaderboard()">펼치기</button>
+    </div>
+    <div id="leaderboard-content">
+        <div style="font-size: 12px; color: #999; margin-bottom: 6px;">(20초마다 갱신)</div>
+        <div id="player-id-display">내 ID: 생성 중...</div>
+        <button id="refresh-board-btn" onclick="loadLeaderboard()">새로고침</button>
+        <div id="leaderboard-status"></div>
+        <ol id="leaderboard-list"></ol>
+    </div>
 </div>
 
 <div id="login-overlay">
@@ -1118,6 +1164,16 @@ function applyMobileLayoutClass() {
     document.body.classList.toggle('mobile', detectMobileDevice());
 }
 
+function toggleLeaderboard() {
+    const panelEl = document.getElementById('leaderboard-panel');
+    const toggleBtnEl = document.getElementById('toggle-board-btn');
+    if (!panelEl || !toggleBtnEl) return;
+
+    const isCollapsed = panelEl.classList.toggle('collapsed');
+    toggleBtnEl.innerText = isCollapsed ? '펼치기' : '접기';
+    toggleBtnEl.setAttribute('aria-expanded', String(!isCollapsed));
+}
+
 window.addEventListener('resize', applyMobileLayoutClass);
 window.addEventListener('orientationchange', applyMobileLayoutClass);
 document.addEventListener('DOMContentLoaded', applyMobileLayoutClass);
@@ -1188,9 +1244,9 @@ function normalizePassword(value) {
 }
 
 async function requestAPI(path, options = {}) {
-    const bases = location.port === '3000'
-        ? ['']
-        : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+    const bases = location.protocol === 'file:'
+        ? ['http://localhost:3000', 'http://127.0.0.1:3000']
+        : ['', 'http://localhost:3000', 'http://127.0.0.1:3000'];
 
     let lastError = null;
 
@@ -1269,12 +1325,12 @@ async function requestAPI(path, options = {}) {
                 console.log('✅ 서버에서 받은 데이터:', result.gameData);
                 applyPlayerGameData(result.gameData);
             } else {
-                console.error('❌ 서버 응늵 오류:', response.status);
-                applyPlayerGameData(null);
+                console.error('❌ 서버 응답 오류:', response.status);
+                console.warn('⚠️ 서버 응답 실패로 기존 로컬 상태를 유지합니다.');
             }
         } catch (e) {
             console.error('게임 데이터 로드 실패:', e);
-            applyPlayerGameData(null);
+            console.warn('⚠️ 네트워크 오류로 기존 로컬 상태를 유지합니다.');
         }
     }
 
